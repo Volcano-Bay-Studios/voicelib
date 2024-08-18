@@ -69,9 +69,9 @@ public class EventHandler {
         while (true) {
             try {
                 if (speechRecognizer == null) {         // wait 10 seconds and try to initialize the speech recognizer again
-                    if (Minecraft.getInstance().player != null) {
-                        Minecraft.getInstance().player.sendSystemMessage(Component.literal("§cAcoustic Model Load Failed"));
-                    }
+//                    if (Minecraft.getInstance().player != null) {
+//                        Minecraft.getInstance().player.sendSystemMessage(Component.literal("§cAcoustic Model Load Failed"));
+//                    }
                     // listenThread.wait(10000);
                     try {
                         Thread.sleep(10000);
@@ -82,15 +82,16 @@ public class EventHandler {
                     File file = new File("vosk\\"+modelType);
                     String path = new File("vosk\\"+modelType).getAbsoluteFile().toString();
                     if (!file.exists()) {
-                        VoiceLib.LOGGER.info("Attempting to download voice model...");
+                        VoiceLib.LOGGER.info("Downloading voice model...");
                         File download = new File("vosk.zip");
                         FileUtils.copyURLToFile(new URL("https://alphacephei.com/vosk/models/"+modelType+".zip"), download);
                         if (download.exists()) {
                             unzip(download.getAbsoluteFile().toPath(), Charset.defaultCharset());
                         } else
-                            VoiceLib.LOGGER.error("Failed to download file, check for mod update");
+                            VoiceLib.LOGGER.error("Failed to download, check for mod update");
+                        VoiceLib.LOGGER.info("Download complete, loading vosk...");
                     }
-                    speechRecognizer = new SpeechRecognizer(new Model(path), VoiceLibConstants.sampleRate); //TODO: Figure out why this isn't working
+                    speechRecognizer = new SpeechRecognizer(new Model(path), VoiceLibConstants.sampleRate);
                 } else if (microphoneHandler == null) {  // wait 10 seconds and try to initialize the microphone handler again
                     listenThread.wait(10000);
                     microphoneHandler = new MicrophoneHandler(new AudioFormat(VoiceLibConstants.sampleRate, 16, 1, true, false));
@@ -178,7 +179,8 @@ public class EventHandler {
                 !lastResult.equals("")) {                                      // If the recognized text is not empty
             VoiceLib.LOGGER.info(VoiceLibConstants.prefix + lastResult);
             if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.prefix + lastResult));
+                if (VoiceLibClient.printToChat)
+                    Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.prefix + lastResult));
                 VoiceLibPackets.sendToServer(new PlayerSpeakPacket(lastResult));
                 VoiceLibApi.fireClientTalkEvent(new ClientTalkEvent() {
                     @Override
