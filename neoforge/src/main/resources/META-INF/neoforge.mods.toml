@@ -11,7 +11,7 @@ authors = "ModogTheDev"
 description = '''
 A Minecraft Voice Recognition Library
 '''
-logoFile = "icon.png"
+logoFile = "assets/voicelib/icon.png"
 
 [[dependencies.voicelib]]
 modId = "neoforge"

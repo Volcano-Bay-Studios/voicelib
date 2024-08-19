@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public final class VoiceLib {
     public static final String MOD_ID = "voicelib";
-    public static boolean exampleEnabled = true;
+    public static boolean exampleEnabled = false;
 
     public static Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static ResourceLocation id(String text) {
