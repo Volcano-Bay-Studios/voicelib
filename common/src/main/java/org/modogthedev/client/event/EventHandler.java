@@ -23,6 +23,7 @@ import org.vosk.Model;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -78,20 +79,8 @@ public class EventHandler {
                     } catch (InterruptedException ie) {
                         continue;
                     }
-                    String modelType = "vosk-model-small-en-us-0.15";
-                    File file = new File("vosk\\"+modelType);
-                    String path = new File("vosk\\"+modelType).getAbsoluteFile().toString();
-                    if (!file.exists()) {
-                        VoiceLib.LOGGER.info("Downloading voice model...");
-                        File download = new File("vosk.zip");
-                        FileUtils.copyURLToFile(new URL("https://alphacephei.com/vosk/models/"+modelType+".zip"), download);
-                        if (download.exists()) {
-                            unzip(download.getAbsoluteFile().toPath(), Charset.defaultCharset());
-                        } else
-                            VoiceLib.LOGGER.error("Failed to download, check for mod update");
-                        VoiceLib.LOGGER.info("Download complete, loading vosk...");
-                    }
-                    speechRecognizer = new SpeechRecognizer(new Model(path), VoiceLibConstants.sampleRate);
+
+                    speechRecognizer = new SpeechRecognizer(new Model(getPath()), VoiceLibConstants.sampleRate);
                 } else if (microphoneHandler == null) {  // wait 10 seconds and try to initialize the microphone handler again
                     listenThread.wait(10000);
                     microphoneHandler = new MicrophoneHandler(new AudioFormat(VoiceLibConstants.sampleRate, 16, 1, true, false));
@@ -137,11 +126,32 @@ public class EventHandler {
             }
         }
     }
+    private static String getPath() {
+        String path = "";
+        try {
+            String modelType = "vosk-model-small-en-us-0.15";
+            File file = new File("vosk\\"+modelType);
+            path = new File("vosk\\"+modelType).getAbsoluteFile().toString();
+            if (!file.exists()) {
+                VoiceLib.LOGGER.info("Downloading voice model...");
+                File download = new File("vosk.zip");
+                FileUtils.copyURLToFile(new URL("https://alphacephei.com/vosk/models/"+modelType+".zip"), download);
+                if (download.exists()) {
+                    unzip(download.getAbsoluteFile().toPath(), Charset.defaultCharset());
+                } else
+                    VoiceLib.LOGGER.error("Failed to download, check for mod update");
+                VoiceLib.LOGGER.info("Download complete, loading vosk...");
+            }
+        } catch (IOException e) {
+            VoiceLib.LOGGER.error("Failed to download, check for mod update");
+        }
+        return path;
+    }
 
     private static void handelClientStartEvent() {     // when the client launch
-        VoiceLib.LOGGER.info("Loading acoustic model from " + VoiceLibConstants.acousticModelPath + "   ..."); // Log the path of the acoustic model
+        VoiceLib.LOGGER.info("Loading acoustic model from " + getPath() + "   ..."); // Log the path of the acoustic model
         try {                                  // Initialize the speech recognizer
-            speechRecognizer = new SpeechRecognizer(new Model(VoiceLibConstants.acousticModelPath), VoiceLibConstants.sampleRate);
+            speechRecognizer = new SpeechRecognizer(new Model(getPath()), VoiceLibConstants.sampleRate);
             VoiceLib.LOGGER.info("Acoustic model loaded successfully!");
         } catch (Exception e1) {
             VoiceLib.LOGGER.error(e1.getMessage());
