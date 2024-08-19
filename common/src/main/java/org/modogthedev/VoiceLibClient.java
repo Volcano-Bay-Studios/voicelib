@@ -6,12 +6,9 @@ import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import net.minecraft.client.KeyMapping;
 import org.modogthedev.client.event.EventHandler;
 
-import javax.swing.*;
-import javax.swing.text.JTextComponent;
-
 public class VoiceLibClient {
     public static boolean recordingSpeech = false;
-    public static boolean alwaysOn = true;
+    public static boolean alwaysOnRecording = true;
     public static boolean printToChat = true;
     public static boolean printToConsole = false;
     public static KeyMapping vKeyMapping = new KeyMapping(
@@ -24,7 +21,7 @@ public class VoiceLibClient {
     public static void init() {
         KeyMappingRegistry.register(vKeyMapping);
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
-            if (alwaysOn)
+            if (alwaysOnRecording)
                 recordingSpeech = !vKeyMapping.isDown();
             else
                 recordingSpeech = vKeyMapping.isDown();

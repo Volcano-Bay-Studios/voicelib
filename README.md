@@ -33,3 +33,11 @@ VoiceLibApi.registerServerPlayerSpeechListener((serverPlayerTalkEvent -> {
 }));
 ```
 You can also see this in VoiceLibExample
+
+# Security
+
+There are a few things to note with this mod,
+- The mod automatically downloads a vosk model from the internet on the first launch, it is about 40MB
+- This mod by default, constantly records and sends all text data to the server. This means a bad actor could listen in on your conversations (But only in text as audio is not sent to the server)
+- The push to talk key is inverted by default, this means pressing it turns OFF your microphone
+- Other mods can forcefully enable always on recording, they can also disable it (See VoiceLibClient)
