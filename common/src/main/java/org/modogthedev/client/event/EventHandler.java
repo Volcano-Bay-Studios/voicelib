@@ -50,6 +50,7 @@ public class EventHandler {
      */
     private static Thread listenThread;
     private static boolean recordingLastTick = false;
+    private static String modelType = "vosk-model-small-en-us-0.15";
 
     /**
      * This method is used to register the response processing for the game start event
@@ -59,6 +60,19 @@ public class EventHandler {
         ClientTickEvent.CLIENT_POST.register(minecraft -> handleEndClientTickEvent());
         ClientLifecycleEvent.CLIENT_STARTED.register(minecraft -> handelClientStartEvent());
         ClientLifecycleEvent.CLIENT_STOPPING.register(minecraft -> handleClientStopEvent());
+    }
+
+    /**
+     * Sets the Model, this will set the path for the model to be downloaded.
+     * Different models can be used to change the language, although the
+     * mod would also have to be configured for that language.
+     * I do NOT recommend changing this as the other models are more than 1GB
+     * See <a href="https://alphacephei.com/vosk/models">Vosk Models</a>}
+     * The default is "vosk-model-small-en-us-0.15"
+     * @param string
+     */
+    public static void setModel(String string) {
+        modelType = string;
     }
 
     private static void listenThreadTask() {
@@ -97,7 +111,7 @@ public class EventHandler {
         }
     }
 
-    public static void unzip(Path path, Charset charset) throws IOException {
+    private static void unzip(Path path, Charset charset) throws IOException {
         String fileBaseName = FilenameUtils.getBaseName(path.getFileName().toString());
         Path destFolderPath = Paths.get(path.getParent().toString(), fileBaseName);
 
@@ -124,7 +138,6 @@ public class EventHandler {
     private static String getPath() {
         String path = "";
         try {
-            String modelType = "vosk-model-small-en-us-0.15";
             File file = new File("vosk\\"+modelType);
             path = new File("vosk\\"+modelType).getAbsoluteFile().toString();
             if (!file.exists()) {
