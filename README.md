@@ -17,7 +17,10 @@ Whenever the user speaks, this will be fired.
 
 VoiceLibApi.setPrintToChat(boolean printToChat)
 This is only on the client. This sets whether or not to 
-print client speak events to chat.
+print client speak events to chat. (Default False)
+
+VoiceLibApi.setPrintToConsole(boolean printToConsole)
+Same as printToChat but for the console instead. (Default False)
 ```
 All methods have java docs for information on their usages.
 

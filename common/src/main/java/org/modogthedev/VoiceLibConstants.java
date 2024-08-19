@@ -36,7 +36,7 @@ public class VoiceLibConstants {
      * The default value is "⌈Speech Input⌋".
      * You can change it to any string you want.
      */
-    public static String prefix = "⌈Speech Input⌋";    // The prefix to prepend in front of chat messages
+    public static String prefix = "⌈Speech Input⌋ ";    // The prefix to prepend in front of chat messages
 
     /**
      * This is a beta feature, it may cause errors.

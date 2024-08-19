@@ -36,6 +36,13 @@ public class VoiceLibApi {
     public static void setPrintToChat(boolean printToChat) {
         VoiceLibClient.printToChat = printToChat;
     }
+    /**
+     * Sets if voice messages are printed into the console
+     * @param printToConsole
+     */
+    public static void setPrintToConsole(boolean printToConsole) {
+        VoiceLibClient.printToConsole = printToConsole;
+    }
 
     public static void fireServerPlayerTalkEvent(ServerPlayerTalkEvent event) {
         for (Consumer<ServerPlayerTalkEvent> consumer: serverPlayerTalkEventListeners) {

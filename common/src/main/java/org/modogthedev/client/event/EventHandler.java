@@ -1,12 +1,9 @@
 package org.modogthedev.client.event;
 
-import com.mojang.authlib.minecraft.client.MinecraftClient;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -186,8 +183,9 @@ public class EventHandler {
     private static void handleEndClientTickEvent() {
         if (VoiceLibClient.recordingSpeech &&           // If the user presses the key V
                 microphoneHandler != null &&                                   // If the microphone initialization is successful
-                !lastResult.equals("")) {                                      // If the recognized text is not empty
-            VoiceLib.LOGGER.info(VoiceLibConstants.prefix + lastResult);
+                !lastResult.equals("")) {
+            if (VoiceLibClient.printToChat)// If the recognized text is not empty
+                VoiceLib.LOGGER.info(VoiceLibConstants.prefix + lastResult);
             if (Minecraft.getInstance().player != null) {
                 if (VoiceLibClient.printToChat)
                     Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.prefix + lastResult));
