@@ -9,7 +9,7 @@ import org.modogthedev.client.event.EventHandler;
 public class VoiceLibClient {
     public static boolean recordingSpeech = false;
     public static boolean alwaysOnRecording = true;
-    public static boolean printToChat = true;
+    public static boolean printToChat = false;
     public static boolean printToConsole = false;
     public static KeyMapping vKeyMapping = new KeyMapping(
             "key.voicelib.push_to_talk", // The translation key of the name shown in the Controls screen
