@@ -7,11 +7,11 @@ license = "MIT"
 modId = "voicelib"
 version = "${version}"
 displayName = "VoiceLib"
-authors = "Me!"
+authors = "ModogTheDev"
 description = '''
-This is an example description! Tell everyone what your mod is about!
+A Minecraft Voice Recognition Library
 '''
-#logoFile = ""
+logoFile = "icon.png"
 
 [[dependencies.voicelib]]
 modId = "neoforge"

@@ -20,8 +20,6 @@ import org.vosk.Model;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -169,7 +167,6 @@ public class EventHandler {
     }
     public static void resetListener() {
         handleClientStopEvent();
-        handelClientStartEvent();
     }
 
     private static void handleClientStopEvent() {
@@ -201,7 +198,9 @@ public class EventHandler {
         }
     }
 
-    private static void handleStartClientTickEvent() {  // handle another client tick event to notify the user that the speech recognition is in progress and the game is not frozen
+    private static void handleStartClientTickEvent() {
+//        if (listenThread == null)
+//            handelClientStartEvent();
         if (VoiceLibClient.recordingSpeech) {  // If the user presses the key V
             if (!recordingLastTick)
                 VoiceLib.LOGGER.info("Recording...");
