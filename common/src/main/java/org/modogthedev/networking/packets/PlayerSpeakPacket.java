@@ -18,7 +18,7 @@ import static org.modogthedev.VoiceLib.MOD_ID;
 public class PlayerSpeakPacket implements CustomPacketPayload {
 
     public static final Type<PlayerSpeakPacket> PLAYER_SPEAK_PACKET_TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "player_speak"));
+            new Type<>(new ResourceLocation(MOD_ID, "player_speak"));
     public static final StreamCodec<RegistryFriendlyByteBuf, PlayerSpeakPacket> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8, p -> p.text,
             PlayerSpeakPacket::new);

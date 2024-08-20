@@ -16,21 +16,21 @@ logoFile = "assets/voicelib/icon.png"
 [[dependencies.voicelib]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.0,)"
+versionRange = "[20.0,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.voicelib]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21,)"
+versionRange = "[1.20,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.voicelib]]
 modId = "architectury"
 type = "required"
-versionRange = "[13.0.2,)"
+versionRange = "[12.0.29,)"
 ordering = "AFTER"
 side = "BOTH"
 

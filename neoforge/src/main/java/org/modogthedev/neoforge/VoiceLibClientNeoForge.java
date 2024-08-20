@@ -5,9 +5,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import org.modogthedev.VoiceLibClient;
 
-@Mod(value = "voicelib", dist = Dist.CLIENT)
 public class VoiceLibClientNeoForge {
-    public VoiceLibClientNeoForge(IEventBus modBus) {
+    public static void init() {
         VoiceLibClient.init();
     }
 }

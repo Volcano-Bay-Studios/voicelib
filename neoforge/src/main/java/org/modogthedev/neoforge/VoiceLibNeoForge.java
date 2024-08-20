@@ -16,5 +16,6 @@ public final class VoiceLibNeoForge {
         VoiceLib.init();
     }
     public void clientSetup(FMLClientSetupEvent event) {
+        VoiceLibClientNeoForge.init();
     }
 }
