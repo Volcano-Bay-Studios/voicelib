@@ -1,5 +1,6 @@
 package xyz.volcanobay.voicelib.speech;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import org.vosk.Model;
 import org.vosk.Recognizer;
@@ -29,6 +30,14 @@ public class SpeechRecognizer {
         } else {
             return "";
         }
+    }
+
+    public String getPartialResult() {
+        String partialResult = recognizer.getPartialResult();
+        if (partialResult == null) return partialResult;
+        JsonElement partial = JsonParser.parseString(partialResult).getAsJsonObject().get("partial");
+        if (partial == null) return partialResult;
+        return partial.getAsString();
     }
 
     /**

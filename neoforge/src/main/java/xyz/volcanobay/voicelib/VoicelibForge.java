@@ -1,6 +1,5 @@
 package xyz.volcanobay.voicelib;
 
-
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 

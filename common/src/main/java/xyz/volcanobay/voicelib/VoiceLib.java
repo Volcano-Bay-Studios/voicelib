@@ -7,9 +7,9 @@ import xyz.volcanobay.voicelib.networking.VoiceLibPackets;
 
 public class VoiceLib {
     public static final String MODID = "voicelib";
-    public static final String MOD_NAME = "voicelib";
+    public static final String MOD_NAME = "VoiceLib";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
-    public static final boolean exampleEnabled = true;
+    public static final boolean exampleEnabled = false;
 
     public static void init() {
         VoiceLibPackets.register();

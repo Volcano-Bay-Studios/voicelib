@@ -38,6 +38,8 @@ public class VoiceLibConstants {
      */
     public static String prefix = "⌈Speech Input⌋ ";    // The prefix to prepend in front of chat messages
 
+    public static String partialPrefix = "⌈Partial Speech Input⌋ ";    // The prefix to prepend in front of partial messages
+
     /**
      * This is a beta feature, it may cause errors.
      * Enable it to fix the encoding error, set this value to true.

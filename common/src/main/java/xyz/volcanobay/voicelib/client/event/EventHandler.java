@@ -14,6 +14,7 @@ import xyz.volcanobay.voicelib.VoiceLib;
 import xyz.volcanobay.voicelib.api.VoiceLibApi;
 import xyz.volcanobay.voicelib.api.events.ClientTalkEvent;
 import xyz.volcanobay.voicelib.networking.packets.PlayerSpeakPacket;
+import xyz.volcanobay.voicelib.networking.packets.PlayerSpeakPartialPacket;
 import xyz.volcanobay.voicelib.speech.MicrophoneHandler;
 import xyz.volcanobay.voicelib.speech.SpeechRecognizer;
 
@@ -43,6 +44,10 @@ public class EventHandler {
      * The following variables are used to store the last recognized result
      */
     private static String lastResult = "";
+    /**
+     * The following variables are used to store the last partial recognized result
+     */
+    private static String lastPartialResult = "";
 
     /**
      * The following variables are used to store the thread that listens to the microphone
@@ -92,12 +97,22 @@ public class EventHandler {
                     microphoneHandler.startListening();  // Try to restart microphone
                 } else {                                 // If the speech recognizer and the microphone handler are initialized successfully
                     String tmp = speechRecognizer.getStringMsg(microphoneHandler.readData());
-                    if (!tmp.equals("") && !tmp.equals(lastResult) &&
+                    if (!tmp.isEmpty() && !tmp.equals(lastResult) &&
                             VoiceLibClient.recordingSpeech) {   // Read audio data from the microphone and send it to the speech recognizer for recognition
                         if (VoiceLibConstants.encoding_repair) {
                             lastResult = SpeechRecognizer.repairEncoding(tmp, VoiceLibConstants.srcEncoding, VoiceLibConstants.dstEncoding);
                         } else {                                        // default configuration without encoding repair
                             lastResult = tmp;                           // restore the recognized text
+                        }
+                    }
+
+                    tmp = speechRecognizer.getPartialResult();
+                    if (!tmp.isEmpty() && !tmp.equals(lastPartialResult) &&
+                            VoiceLibClient.recordingSpeech) {   // Read audio data from the microphone and send it to the speech recognizer for recognition
+                        if (VoiceLibConstants.encoding_repair) {
+                            lastPartialResult = SpeechRecognizer.repairEncoding(tmp, VoiceLibConstants.srcEncoding, VoiceLibConstants.dstEncoding);
+                        } else {                                        // default configuration without encoding repair
+                            lastPartialResult = tmp;                           // restore the recognized text
                         }
                     }
                 }
@@ -191,22 +206,33 @@ public class EventHandler {
 
     public static void handleEndClientTickEvent() {
         if (VoiceLibClient.recordingSpeech &&           // If the user presses the key V
-                microphoneHandler != null &&                                   // If the microphone initialization is successful
-                !lastResult.equals("")) {
-            if (VoiceLibClient.printToChat)// If the recognized text is not empty
-                VoiceLib.LOGGER.info(VoiceLibConstants.prefix + lastResult);
-            if (Minecraft.getInstance().player != null) {
-                if (VoiceLibClient.printToChat)
-                    Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.prefix + lastResult));
-                VeilPacketManager.server().sendPacket(new PlayerSpeakPacket(lastResult));
-                VoiceLibApi.fireClientTalkEvent(new ClientTalkEvent() {
-                    @Override
-                    public String getText() {
-                        return lastResult;
+                microphoneHandler != null ) {
+            if (!lastResult.isEmpty()) {
+                if (VoiceLibClient.printToConsole) { // If the recognized text is not empty
+                    VoiceLib.LOGGER.info(VoiceLibConstants.prefix + lastResult);
+                }
+                if (Minecraft.getInstance().player != null) {
+                    if (VoiceLibClient.printToChat) {
+                        Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.prefix + lastResult));
                     }
-                });
+                    VeilPacketManager.server().sendPacket(new PlayerSpeakPacket(lastResult));
+                    VoiceLibApi.fireClientTalkEvent(() -> lastResult);
+                }
+                lastResult = "";                                                   // Clear the recognized text
             }
-            lastResult = "";                                                   // Clear the recognized text
+            if (!lastPartialResult.isEmpty()) {
+                if (VoiceLibClient.printToConsole) { // If the recognized text is not empty
+                    VoiceLib.LOGGER.info(VoiceLibConstants.partialPrefix + lastPartialResult);
+                }
+                if (Minecraft.getInstance().player != null) {
+                    if (VoiceLibClient.printToChat) {
+                        Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.partialPrefix + lastResult));
+                    }
+                    VeilPacketManager.server().sendPacket(new PlayerSpeakPartialPacket(lastPartialResult));
+                    VoiceLibApi.fireClientPartialTalkEvent(() -> lastPartialResult);
+                }
+                lastPartialResult = "";
+            }
         }
     }
 

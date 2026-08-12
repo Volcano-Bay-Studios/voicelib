@@ -1,4 +1,4 @@
-package xyz.volcanobay.voicelib.util;
+package xyz.volcanobay.voicelib.api.util;
 
 import org.apache.commons.codec.language.DoubleMetaphone;
 
