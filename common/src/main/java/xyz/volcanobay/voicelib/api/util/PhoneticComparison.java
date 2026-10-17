@@ -59,12 +59,12 @@ public class PhoneticComparison {
     public static BestFit bestFitWord(String t1, String t2) {
         String[] words = t1.split(" ");
         int size = words.length;
-        double best = 999999999;
+        double best = -1;
         int index = 0;
         for (int i = 0; i < size; i++) {
             String text = words[i];
             double distance = calculate(text, t2);
-            if (distance < best) {
+            if (distance > best) {
                 best = distance;
                 index = i;
             }
@@ -76,12 +76,12 @@ public class PhoneticComparison {
 
     public static BestFit bestFitWord(List<String> words, String t2) {
         int size = words.size();
-        double best = 999999999;
+        double best = -1;
         int index = 0;
         for (int i = 0; i < size; i++) {
             String text = words.get(i);
             double distance = calculate(text, t2);
-            if (distance < best) {
+            if (distance > best) {
                 best = distance;
                 index = i;
             }

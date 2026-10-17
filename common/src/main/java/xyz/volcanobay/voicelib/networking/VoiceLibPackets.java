@@ -6,7 +6,7 @@ import xyz.volcanobay.voicelib.networking.packets.PlayerSpeakPartialPacket;
 
 public class VoiceLibPackets {
 
-    private static final VeilPacketManager INSTANCE = VeilPacketManager.create(VoiceLib.MODID, "1");
+    private static final VeilPacketManager INSTANCE = VeilPacketManager.create(VoiceLib.MODID, "2");
 
     public static void register() {
         INSTANCE.registerServerbound(PlayerSpeakPacket.TYPE, PlayerSpeakPacket.CODEC, PlayerSpeakPacket::handleServerSide);

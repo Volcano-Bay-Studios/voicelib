@@ -1,9 +1,9 @@
 package xyz.volcanobay.voicelib.speech;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import org.vosk.Model;
 import org.vosk.Recognizer;
+
+import xyz.volcanobay.voicelib.api.util.SpeechJson;
 
 import java.io.UnsupportedEncodingException;
 
@@ -13,6 +13,8 @@ public class SpeechRecognizer {
     public SpeechRecognizer(Model model, int sampleRate) throws Exception{
         if (model != null) {
             recognizer = new Recognizer(model, sampleRate);
+            recognizer.setWords(true);          // per-word conf/start/end in final results
+            recognizer.setPartialWords(true);   // and in partial results
         } else {
             throw new Exception("Acoustic model not loaded.");
         }
@@ -24,20 +26,34 @@ public class SpeechRecognizer {
      * @return {@link java.lang.String} message
      */
     public String getStringMsg(byte[] data) {
-        if (recognizer.acceptWaveForm(data, data.length)) {
-            // MicrophoneTextInputMain.LOGGER.info(recognizer.getResult());
-            return JsonParser.parseString(recognizer.getResult()).getAsJsonObject().get("text").getAsString();
-        } else {
-            return "";
-        }
+        String json = acceptAudio(data);
+        return json == null ? "" : SpeechJson.text(json);
     }
 
     public String getPartialResult() {
-        String partialResult = recognizer.getPartialResult();
-        if (partialResult == null) return partialResult;
-        JsonElement partial = JsonParser.parseString(partialResult).getAsJsonObject().get("partial");
-        if (partial == null) return partialResult;
-        return partial.getAsString();
+        return SpeechJson.text(getPartialJson());
+    }
+
+    /**
+     * Feed audio data
+     * @return the Vosk result JSON when an utterance completes, otherwise null
+     */
+    public String acceptAudio(byte[] data) {
+        return recognizer.acceptWaveForm(data, data.length) ? recognizer.getResult() : null;
+    }
+
+    /**
+     * @return the Vosk partial JSON for the utterance in progress
+     */
+    public String getPartialJson() {
+        return recognizer.getPartialResult();
+    }
+
+    /**
+     * Flush the recognizer: the result JSON for any audio not yet returned as a result, then resets
+     */
+    public String getFinalJson() {
+        return recognizer.getFinalResult();
     }
 
     /**

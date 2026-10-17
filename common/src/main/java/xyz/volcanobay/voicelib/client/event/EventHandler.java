@@ -13,6 +13,7 @@ import xyz.volcanobay.voicelib.VoiceLibConstants;
 import xyz.volcanobay.voicelib.VoiceLib;
 import xyz.volcanobay.voicelib.api.VoiceLibApi;
 import xyz.volcanobay.voicelib.api.events.ClientTalkEvent;
+import xyz.volcanobay.voicelib.api.util.SpeechJson;
 import xyz.volcanobay.voicelib.networking.packets.PlayerSpeakPacket;
 import xyz.volcanobay.voicelib.networking.packets.PlayerSpeakPartialPacket;
 import xyz.volcanobay.voicelib.speech.MicrophoneHandler;
@@ -26,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -43,11 +45,14 @@ public class EventHandler {
     /**
      * The following variables are used to store the last recognized result
      */
-    private static String lastResult = "";
+    private static final AtomicReference<String> lastResult = new AtomicReference<>("");   // Vosk JSON; written by the listen thread, taken each tick
     /**
      * The following variables are used to store the last partial recognized result
      */
-    private static String lastPartialResult = "";
+    private static final AtomicReference<String> lastPartialResult = new AtomicReference<>("");
+    private static boolean wasRecording = false;   // listen thread only
+    private static final int MAX_PACKET_JSON = 30000;   // serverbound payloads are capped at 32767 bytes
+    private static String lastPartialHeard = "";  // listen thread only; skips unchanged partials
 
     /**
      * The following variables are used to store the thread that listens to the microphone
@@ -77,7 +82,7 @@ public class EventHandler {
     }
 
     private static void listenThreadTask() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {   // handleClientStopEvent interrupts to stop
             try {
                 if (speechRecognizer == null) {         // wait 10 seconds and try to initialize the speech recognizer again
 //                    if (Minecraft.getInstance().player != null) {
@@ -87,39 +92,48 @@ public class EventHandler {
                     try {
                         Thread.sleep(10000);
                     } catch (InterruptedException ie) {
-                        continue;
+                        return;
                     }
 
                     speechRecognizer = new SpeechRecognizer(new Model(getPathAndDownload()), VoiceLibConstants.sampleRate);
                 } else if (microphoneHandler == null) {  // wait 10 seconds and try to initialize the microphone handler again
-                    listenThread.wait(10000);
+                    Thread.sleep(10000);
                     microphoneHandler = new MicrophoneHandler(new AudioFormat(VoiceLibConstants.sampleRate, 16, 1, true, false));
                     microphoneHandler.startListening();  // Try to restart microphone
                 } else {                                 // If the speech recognizer and the microphone handler are initialized successfully
-                    String tmp = speechRecognizer.getStringMsg(microphoneHandler.readData());
-                    if (!tmp.isEmpty() && !tmp.equals(lastResult) &&
-                            VoiceLibClient.recordingSpeech) {   // Read audio data from the microphone and send it to the speech recognizer for recognition
-                        if (VoiceLibConstants.encoding_repair) {
-                            lastResult = SpeechRecognizer.repairEncoding(tmp, VoiceLibConstants.srcEncoding, VoiceLibConstants.dstEncoding);
-                        } else {                                        // default configuration without encoding repair
-                            lastResult = tmp;                           // restore the recognized text
-                        }
-                    }
+                    byte[] data = microphoneHandler.readData();  // always read so the mic buffer doesn't back up
+                    boolean recording = VoiceLibClient.recordingSpeech;
+                    if (recording && data != null) {     // only feed audio while recording
+                        String json = speechRecognizer.acceptAudio(data);
+                        if (json != null && !SpeechJson.text(json).isEmpty())
+                            lastResult.set(repair(json));
 
-                    tmp = speechRecognizer.getPartialResult();
-                    if (!tmp.isEmpty() && !tmp.equals(lastPartialResult) &&
-                            VoiceLibClient.recordingSpeech) {   // Read audio data from the microphone and send it to the speech recognizer for recognition
-                        if (VoiceLibConstants.encoding_repair) {
-                            lastPartialResult = SpeechRecognizer.repairEncoding(tmp, VoiceLibConstants.srcEncoding, VoiceLibConstants.dstEncoding);
-                        } else {                                        // default configuration without encoding repair
-                            lastPartialResult = tmp;                           // restore the recognized text
-                        }
+                        json = speechRecognizer.getPartialJson();
+                        String text = SpeechJson.text(json);
+                        if (!text.isEmpty() && !text.equals(lastPartialHeard))   // fire when the words change
+                            lastPartialResult.set(repair(json));
+                        lastPartialHeard = text;
+                    } else if (!recording && wasRecording) {   // recording just ended: flush what Vosk has heard so far
+                        String json = speechRecognizer.getFinalJson();
+                        if (!SpeechJson.text(json).isEmpty())
+                            lastResult.set(repair(json));
+                        lastPartialResult.set("");
+                        lastPartialHeard = "";
                     }
+                    wasRecording = recording;
                 }
+            } catch (InterruptedException e) {
+                return;
             } catch (Exception e) {
                 VoiceLib.LOGGER.error(e.getMessage());
             }
         }
+    }
+
+    private static String repair(String text) throws UnsupportedEncodingException {
+        return VoiceLibConstants.encoding_repair
+                ? SpeechRecognizer.repairEncoding(text, VoiceLibConstants.srcEncoding, VoiceLibConstants.dstEncoding)
+                : text;
     }
 
     private static void unzip(Path path, Charset charset) throws IOException {
@@ -188,50 +202,56 @@ public class EventHandler {
             VoiceLib.LOGGER.warn(
                     String.format("(test function) Trt to resolve error encoding from %s to %s...", VoiceLibConstants.srcEncoding, VoiceLibConstants.dstEncoding));
         }
-        listenThread = new Thread(EventHandler::listenThreadTask);
+        listenThread = new Thread(EventHandler::listenThreadTask, "VoiceLib Listener");
+        listenThread.setDaemon(true);
         listenThread.start();
     }
 
     public static void resetListener() {
         handleClientStopEvent();
+        handelClientStartEvent();                 // fresh mic + thread; the model reloads after 10s
     }
 
     public static void handleClientStopEvent() {
-        listenThread.interrupt();                 // Stop the thread that listens to the microphone
-        microphoneHandler.stopListening();        // Stop listening to the microphone
+        if (listenThread != null)
+            listenThread.interrupt();             // Stop the thread that listens to the microphone
+        if (microphoneHandler != null)
+            microphoneHandler.stopListening();    // Stop listening to the microphone
         speechRecognizer = null;
         microphoneHandler = null;
         listenThread = null;                      // Clear the thread
     }
 
     public static void handleEndClientTickEvent() {
-        if (VoiceLibClient.recordingSpeech &&           // If the user presses the key V
-                microphoneHandler != null ) {
-            if (!lastResult.isEmpty()) {
-                if (VoiceLibClient.printToConsole) { // If the recognized text is not empty
-                    VoiceLib.LOGGER.info(VoiceLibConstants.prefix + lastResult);
-                }
-                if (Minecraft.getInstance().player != null) {
-                    if (VoiceLibClient.printToChat) {
-                        Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.prefix + lastResult));
-                    }
-                    VeilPacketManager.server().sendPacket(new PlayerSpeakPacket(lastResult));
-                    VoiceLibApi.fireClientTalkEvent(() -> lastResult);
-                }
-                lastResult = "";                                                   // Clear the recognized text
+        if (microphoneHandler == null) return;
+        // Results are only produced while recording, plus one final flush when recording ends,
+        // so dispatch regardless of the current recording state.
+        String resultJson = lastResult.getAndSet("");
+        if (!resultJson.isEmpty()) {
+            String result = SpeechJson.text(resultJson);
+            if (VoiceLibClient.printToConsole) { // If the recognized text is not empty
+                VoiceLib.LOGGER.info(VoiceLibConstants.prefix + result);
             }
-            if (!lastPartialResult.isEmpty()) {
-                if (VoiceLibClient.printToConsole) { // If the recognized text is not empty
-                    VoiceLib.LOGGER.info(VoiceLibConstants.partialPrefix + lastPartialResult);
+            if (Minecraft.getInstance().player != null) {
+                if (VoiceLibClient.printToChat) {
+                    Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.prefix + result));
                 }
-                if (Minecraft.getInstance().player != null) {
-                    if (VoiceLibClient.printToChat) {
-                        Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.partialPrefix + lastResult));
-                    }
-                    VeilPacketManager.server().sendPacket(new PlayerSpeakPartialPacket(lastPartialResult));
-                    VoiceLibApi.fireClientPartialTalkEvent(() -> lastPartialResult);
+                VeilPacketManager.server().sendPacket(new PlayerSpeakPacket(SpeechJson.fit(resultJson, MAX_PACKET_JSON)));
+                VoiceLibApi.fireClientTalkEvent(ClientTalkEvent.of(result, resultJson));
+            }
+        }
+        String partialJson = lastPartialResult.getAndSet("");
+        if (!partialJson.isEmpty()) {
+            String partial = SpeechJson.text(partialJson);
+            if (VoiceLibClient.printToConsole) {
+                VoiceLib.LOGGER.info(VoiceLibConstants.partialPrefix + partial);
+            }
+            if (Minecraft.getInstance().player != null) {
+                if (VoiceLibClient.printToChat) {
+                    Minecraft.getInstance().player.sendSystemMessage(Component.literal(VoiceLibConstants.partialPrefix + partial));
                 }
-                lastPartialResult = "";
+                VeilPacketManager.server().sendPacket(new PlayerSpeakPartialPacket(SpeechJson.fit(partialJson, MAX_PACKET_JSON)));
+                VoiceLibApi.fireClientPartialTalkEvent(ClientTalkEvent.of(partial, partialJson));
             }
         }
     }
@@ -245,9 +265,6 @@ public class EventHandler {
             recordingLastTick = true;
         } else {
             recordingLastTick = false;
-            if (lastResult.length() > 0) {
-                lastResult = "";
-            }
         }
     }
 }
